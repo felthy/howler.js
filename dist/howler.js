@@ -1,5 +1,5 @@
 /*!
- *  howler.js v2.0.5
+ *  howler.js v2.0.6-alpha
  *  howlerjs.com
  *
  *  (c) 2013-2017, James Simpson of GoldFire Studios
@@ -1129,7 +1129,7 @@
             sound._node.gain.linearRampToValueAtTime(to, end);
           }
 
-          self._startFadeInterval(sound, from, to, len, ids[i]);
+          self._startFadeInterval(sound, from, to, len, ids[i], typeof id === 'undefined');
         }
       }
 
@@ -1143,8 +1143,9 @@
      * @param  {Number} to   The volume to fade to (0.0 to 1.0).
      * @param  {Number} len  Time in milliseconds to fade.
      * @param  {Number} id   The sound id to fade.
+     * @param  {Boolean} isGroup   If true, set the volume on the group.
      */
-    _startFadeInterval: function(sound, from, to, len, id) {
+    _startFadeInterval: function(sound, from, to, len, id, isGroup) {
       var self = this;
       var vol = from;
       var dir = from > to ? 'out' : 'in';
@@ -1173,13 +1174,14 @@
 
         // Change the volume.
         if (self._webAudio) {
-          if (typeof id === 'undefined') {
-            self._volume = vol;
-          }
-
           sound._volume = vol;
         } else {
           self.volume(vol, sound._id, true);
+        }
+
+        // Set the group's volume.
+        if (isGroup) {
+          self._volume = vol;
         }
 
         // When the fade is complete, stop it and fire event.
@@ -1706,7 +1708,7 @@
       // If we are using IE and there was network latency we may be clipping
       // audio before it completes playing. Lets check the node to make sure it
       // believes it has completed, before ending the playback.
-      if (!self._webAudio && sound._node && !sound._node.paused) {
+      if (!self._webAudio && sound._node && !sound._node.paused && !sound._node.ended) {
         setTimeout(self._ended.bind(self, sound), 100);
         return self;
       }
@@ -1908,10 +1910,10 @@
     _cleanBuffer: function(node) {
       var self = this;
 
-      if (self._scratchBuffer) {
+      if (Howler._scratchBuffer) {
         node.bufferSource.onended = null;
         node.bufferSource.disconnect(0);
-        try { node.bufferSource.buffer = self._scratchBuffer; } catch(e) {}
+        try { node.bufferSource.buffer = Howler._scratchBuffer; } catch(e) {}
       }
       node.bufferSource = null;
 
@@ -2252,7 +2254,7 @@
 /*!
  *  Spatial Plugin - Adds support for stereo and 3D audio where Web Audio is supported.
  *  
- *  howler.js v2.0.5
+ *  howler.js v2.0.6-alpha
  *  howlerjs.com
  *
  *  (c) 2013-2017, James Simpson of GoldFire Studios
